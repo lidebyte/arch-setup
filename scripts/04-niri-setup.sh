@@ -67,6 +67,24 @@ pacman -S --noconfirm --needed niri xwayland-satellite xdg-desktop-portal-gnome 
 success "Niri core packages installed."
 
 # ------------------------------------------------------------------------------
+# 1.5 Install Pre-compiled awww (Local Binary Check)
+# ------------------------------------------------------------------------------
+log "Step 1.5/9: Checking for local awww binaries..."
+
+LOCAL_BIN_AWWW="$PARENT_DIR/bin/awww"
+LOCAL_BIN_DAEMON="$PARENT_DIR/bin/awww-daemon"
+
+if [ -f "$LOCAL_BIN_AWWW" ] && [ -f "$LOCAL_BIN_DAEMON" ]; then
+    log "-> Found local awww binaries. Installing to /usr/local/bin/..."
+    cp "$LOCAL_BIN_AWWW" /usr/local/bin/awww
+    cp "$LOCAL_BIN_DAEMON" /usr/local/bin/awww-daemon
+    chmod +x /usr/local/bin/awww /usr/local/bin/awww-daemon
+    success "awww & awww-daemon installed (Local Binary)."
+else
+    warn "Local awww binaries not found. Will rely on AUR/Fallback."
+fi
+
+# ------------------------------------------------------------------------------
 # 2. File Manager (Nautilus) Setup
 # ------------------------------------------------------------------------------
 log "Step 2/9: Configuring Nautilus and Terminal..."
@@ -94,18 +112,16 @@ fi
 log "Step 3/9: Configuring Software Center..."
 pacman -S --noconfirm --needed flatpak gnome-software > /dev/null 2>&1
 
-# 1. Add Flathub repo first (Official)
+# 1. Add Flathub repo first
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-# 2. Smart Mirror Configuration based on Timezone
+# 2. Smart Mirror Configuration
 log "-> Checking System Timezone..."
-
-# Get timezone from symlink (Standard Arch method)
 CURRENT_TZ=$(readlink -f /etc/localtime)
 
 if [[ "$CURRENT_TZ" == *"Shanghai"* ]]; then
     log "-> Detected Timezone: ${H_GREEN}Asia/Shanghai${NC}"
-    log "-> Switching Flathub to USTC Mirror for faster speed..."
+    log "-> Switching Flathub to USTC Mirror..."
     flatpak remote-modify flathub --url=https://mirrors.ustc.edu.cn/flathub
     success "Flatpak configured (USTC Mirror)."
 else
@@ -139,9 +155,7 @@ if [ -f "$LIST_FILE" ]; then
 
         for pkg in "${PACKAGE_ARRAY[@]}"; do
             if [ "$pkg" == "imagemagic" ]; then pkg="imagemagick"; fi
-            
-            # Logic: Try to install everything via yay (AUR or Chaotic)
-            # awww-git is allowed here
+            # awww-git is allowed here (yay attempt)
             
             if [[ "$pkg" == *"-git" ]]; then
                 GIT_LIST+=("$pkg")
@@ -199,6 +213,7 @@ if [ -f "$LIST_FILE" ]; then
         # Awww Recovery (Local Binary Fallback)
         if ! command -v awww &> /dev/null; then
             warn "Awww binary not found (AUR install failed)."
+            
             LOCAL_BIN_AWWW="$PARENT_DIR/bin/awww"
             LOCAL_BIN_DAEMON="$PARENT_DIR/bin/awww-daemon"
             
@@ -233,7 +248,7 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 5. Clone Dotfiles (With Retry)
+# 5. Clone Dotfiles (With Retry & User Config Clean)
 # ------------------------------------------------------------------------------
 log "Step 5/9: Cloning and applying dotfiles..."
 
@@ -257,6 +272,17 @@ if [ -d "$TEMP_DIR/dotfiles" ]; then
     runuser -u "$TARGET_USER" -- cp -rf "$TEMP_DIR/dotfiles/." "$HOME_DIR/"
     success "Dotfiles applied."
     
+    # --- [NEW] Clear specific config for non-shorin users ---
+    if [ "$TARGET_USER" != "shorin" ]; then
+        OUTPUT_KDL="$HOME_DIR/.config/niri/output.kdl"
+        if [ -f "$OUTPUT_KDL" ]; then
+            log "-> Detected non-shorin user. Clearing specific monitor configuration (output.kdl)..."
+            # Truncate content to 0 size, keep file valid
+            runuser -u "$TARGET_USER" -- truncate -s 0 "$OUTPUT_KDL"
+            success "Cleared output.kdl for generic user."
+        fi
+    fi
+
     # --- [ULTIMATE FALLBACK] Check Awww status ---
     if ! command -v awww &> /dev/null; then
         warn "Awww failed all install methods. Switching to swaybg..."
