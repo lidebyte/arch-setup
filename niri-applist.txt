@@ -37,3 +37,4 @@ imagemagick
 swaybg
 imv
 mission-center
+neovim
