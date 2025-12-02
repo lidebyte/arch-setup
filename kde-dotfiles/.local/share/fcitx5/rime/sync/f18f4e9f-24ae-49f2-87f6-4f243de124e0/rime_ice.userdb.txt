@@ -1,0 +1,21 @@
+# Rime user dictionary
+#@/db_name	rime_ice
+#@/db_type	userdb
+#@/rime_version	1.14.0
+#@/tick	15
+#@/user_id	f18f4e9f-24ae-49f2-87f6-4f243de124e0
+guan bi 	关闭	c=1 d=0.932394 t=15
+huo dong 	活动	c=1 d=0.995012 t=15
+ji huo 	激活	c=1 d=0.985112 t=15
+kuai su 	快速	c=1 d=0.970446 t=15
+qie huan 	切换	c=1 d=1 t=15
+quan ping 	全屏	c=1 d=0.941765 t=15
+xian shi 	显示	c=1 d=0.955997 t=15
+ying yong 	应用	c=1 d=0.99005 t=15
+zhong yang 	中央	c=1 d=0.951229 t=15
+zhong zhi 	终止	c=1 d=0.937067 t=15
+zhuo mian 	桌面	c=1 d=0.960789 t=15
+zi ding yi 	自定义	c=1 d=0.965605 t=15
+zong 	总	c=1 d=0.946485 t=15
+zui da hua 	最大化	c=1 d=0.97531 t=15
+zui xiao hua 	最小化	c=1 d=0.980199 t=15
