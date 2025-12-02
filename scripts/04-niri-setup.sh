@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 04-niri-setup.sh - Niri Desktop (Visual Enhanced v9.0)
+# 04-niri-setup.sh - Niri Desktop (Visual Enhanced v9.1)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -54,20 +54,19 @@ HOME_DIR="/home/$TARGET_USER"
 info_kv "Target" "$TARGET_USER"
 
 # ------------------------------------------------------------------------------
-# [LOGIC] Auto-Login Decision Matrix (Pacman-based Detection)
+# [LOGIC] Auto-Login Decision Matrix
 # ------------------------------------------------------------------------------
 log "Checking for installed Display Managers..."
 
-# Standard DM package names in Arch Linux
 KNOWN_DMS=(
-    "gdm" "sddm" "lightdm" "lxdm" "slim" "xorg-xdm"  # Graphical
-    "ly" "greetd" "emptty" "lemurs" "console-tdm"    # Console/TUI
+    "gdm" "sddm" "lightdm" "lxdm" "slim" "xorg-xdm"
+    "ly" "greetd" "emptty" "lemurs" "console-tdm"
 )
 
 SKIP_AUTOLOGIN=false
 DM_FOUND=""
 
-# Check if any DM package is installed using pacman -Q
+# Check via pacman -Q
 for dm in "${KNOWN_DMS[@]}"; do
     if pacman -Q "$dm" &>/dev/null; then
         DM_FOUND="$dm"
@@ -76,15 +75,21 @@ for dm in "${KNOWN_DMS[@]}"; do
 done
 
 if [ -n "$DM_FOUND" ]; then
-    # Case A: DM Package Installed -> Force Skip
+    # Case A: DM Installed -> Force Skip
     info_kv "Conflict" "${H_RED}$DM_FOUND${NC}" "Package detected"
-    warn "To prevent conflicts with $DM_FOUND, TTY auto-login will be DISABLED."
+    warn "To prevent conflicts, TTY auto-login will be DISABLED."
     SKIP_AUTOLOGIN=true
 else
-    # Case B: No DM Package -> Ask User
+    # Case B: No DM -> Ask User (With Timeout)
     info_kv "DM Check" "None" "No Display Manager installed"
     echo ""
-    read -p "$(echo -e "   ${H_CYAN}Do you want to enable TTY auto-login for Niri? [Y/n] ${NC}")" choice
+    
+    # [NEW] Timeout 20s
+    read -t 20 -p "$(echo -e "   ${H_CYAN}Enable TTY auto-login for Niri? [Y/n] (Default Y in 20s): ${NC}")" choice
+    
+    # Handle timeout newline issue
+    if [ $? -ne 0 ]; then echo ""; fi
+    
     choice=${choice:-Y}
     
     if [[ ! "$choice" =~ ^[Yy]$ ]]; then
@@ -106,7 +111,7 @@ log "Installing Niri & Essentials..."
 PKGS="niri xwayland-satellite xdg-desktop-portal-gnome fuzzel kitty firefox libnotify mako polkit-gnome pciutils"
 exe pacman -Syu --noconfirm --needed $PKGS
 
-# Firefox Policy (Pywalfox)
+# Firefox Policy
 log "Configuring Firefox Policies..."
 FIREFOX_POLICY_DIR="/etc/firefox/policies"
 exe mkdir -p "$FIREFOX_POLICY_DIR"
@@ -128,7 +133,7 @@ exe chmod 644 "$FIREFOX_POLICY_DIR/policies.json"
 success "Firefox policy applied."
 
 # ------------------------------------------------------------------------------
-# 1.1 Configure XDG Portals (Fix for SDDM/KDE Crash)
+# 1.1 Configure XDG Portals
 # ------------------------------------------------------------------------------
 log "Configuring XDG Desktop Portals..."
 
@@ -400,7 +405,7 @@ sed -i '/GOPROXY=https:\/\/goproxy.cn,direct/d' /etc/environment
 success "Cleanup done."
 
 # ------------------------------------------------------------------------------
-# 10. Auto-Login (Anti-Hijack Mode)
+# 10. Auto-Login
 # ------------------------------------------------------------------------------
 section "Final" "Boot Config"
 
