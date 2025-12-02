@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 04-niri-setup.sh - Niri Desktop (Visual Enhanced)
+# 04-niri-setup.sh - Niri Desktop (Visual Enhanced v7.3)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -166,7 +166,10 @@ if [ "$CN_MIRROR" == "1" ] || [ "$DEBUG" == "1" ]; then
     if [ "$DEBUG" == "1" ]; then warn "DEBUG MODE ACTIVE"; fi
     
     log "Enabling China Optimizations..."
-    exe flatpak remote-modify flathub --url=https://mirrors.ustc.edu.cn/flathub
+    
+    # [MODIFIED] Using Tsinghua Mirror (TUNA)
+    log "-> Switching Flathub to Tsinghua Mirror..."
+    exe flatpak remote-modify flathub --url=https://mirror.tuna.tsinghua.edu.cn/flathub
     
     export GOPROXY=https://goproxy.cn,direct
     if ! grep -q "GOPROXY" /etc/environment; then
@@ -212,6 +215,7 @@ if [ -f "$LIST_FILE" ]; then
         # --- Phase 1: Batch Install ---
         if [ -n "$BATCH_LIST" ]; then
             log "Phase 1: Batch Install..."
+            
             if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
                 warn "Batch failed. Retrying with Mirror Toggle..."
                 
@@ -243,8 +247,11 @@ if [ -f "$LIST_FILE" ]; then
                     fi
                     
                     if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
+                        
                         warn "Checking local cache..."
-                        if install_local_fallback "$git_pkg"; then :; else
+                        if install_local_fallback "$git_pkg"; then
+                            :
+                        else
                             error "Failed: $git_pkg"
                             FAILED_PACKAGES+=("$git_pkg")
                         fi
@@ -259,6 +266,7 @@ if [ -f "$LIST_FILE" ]; then
         
         # --- Recovery Checks ---
         log "Verifying critical components..."
+        
         if ! command -v waybar &> /dev/null; then
             warn "Waybar missing. Installing stock..."
             exe pacman -Syu --noconfirm --needed waybar
@@ -282,7 +290,7 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 5. Dotfiles Deployment & Exclusion Logic
+# 5. Dotfiles
 # ------------------------------------------------------------------------------
 section "Step 5/9" "Deploying Dotfiles"
 
@@ -305,34 +313,6 @@ if ! exe runuser -u "$TARGET_USER" -- git clone "$REPO_URL" "$TEMP_DIR"; then
 fi
 
 if [ -d "$TEMP_DIR/dotfiles" ]; then
-    
-    # --- [NEW] Selective Exclusion for Non-Shorin Users ---
-    if [ "$TARGET_USER" != "shorin" ]; then
-        EXCLUDE_FILE="$PARENT_DIR/exclude-dotfiles.txt"
-        if [ -f "$EXCLUDE_FILE" ]; then
-            log "Applying exclusion list for user '$TARGET_USER'..."
-            
-            mapfile -t EXCLUDES < <(grep -vE "^\s*#|^\s*$" "$EXCLUDE_FILE" | tr -d '\r')
-            
-            for item in "${EXCLUDES[@]}"; do
-                item=$(echo "$item" | xargs)
-                [ -z "$item" ] && continue
-                
-                REMOVE_TARGET="$TEMP_DIR/dotfiles/.config/$item"
-                
-                if [ -d "$REMOVE_TARGET" ]; then
-                    exe rm -rf "$REMOVE_TARGET"
-                fi
-            done
-            success "Exclusions applied."
-        fi
-        
-        # Also clear output.kdl as usual
-        log "Clearing output.kdl..."
-        exe truncate -s 0 "$TEMP_DIR/dotfiles/.config/niri/output.kdl"
-    fi
-    
-    # --- Backup & Deploy ---
     BACKUP_NAME="config_backup_$(date +%s).tar.gz"
     log "Backing up ~/.config..."
     exe runuser -u "$TARGET_USER" -- tar -czf "$HOME_DIR/$BACKUP_NAME" -C "$HOME_DIR" .config
@@ -340,8 +320,16 @@ if [ -d "$TEMP_DIR/dotfiles" ]; then
     log "Applying dotfiles..."
     exe runuser -u "$TARGET_USER" -- cp -rf "$TEMP_DIR/dotfiles/." "$HOME_DIR/"
     success "Dotfiles applied."
+    
+    if [ "$TARGET_USER" != "shorin" ]; then
+        OUTPUT_KDL="$HOME_DIR/.config/niri/output.kdl"
+        if [ -f "$OUTPUT_KDL" ]; then
+            log "Clearing output.kdl..."
+            exe runuser -u "$TARGET_USER" -- truncate -s 0 "$OUTPUT_KDL"
+        fi
+    fi
 
-    # Ultimate Fallback (Awww check)
+    # Ultimate Fallback
     if ! runuser -u "$TARGET_USER" -- command -v awww &> /dev/null; then
         warn "Awww missing. Switching to Swaybg..."
         exe pacman -Syu --noconfirm --needed swaybg
@@ -402,14 +390,18 @@ LINK_PATH="$WANTS_DIR/niri-autostart.service"
 SERVICE_FILE="$USER_SYSTEMD_DIR/niri-autostart.service"
 
 if [ "$SKIP_AUTOLOGIN" = true ]; then
-    log "Auto-login skipped (DM active)."
+    log "Auto-login skipped (Reason: $DM_FOUND or User Opt-out)."
+    
+    # [CLEANUP] Remove any existing hijack configs
     if [ -f "$LINK_PATH" ] || [ -f "$SERVICE_FILE" ]; then
-        warn "Removing old auto-login services..."
+        warn "Removing old auto-login services to prevent session hijacking..."
         exe rm -f "$LINK_PATH"
         exe rm -f "$SERVICE_FILE"
+        success "Cleanup successful."
     fi
 else
     log "Configuring TTY Auto-login..."
+    
     GETTY_DIR="/etc/systemd/system/getty@tty1.service.d"
     mkdir -p "$GETTY_DIR"
     cat <<EOT > "$GETTY_DIR/autologin.conf"
@@ -434,6 +426,7 @@ EOT
 
     exe mkdir -p "$WANTS_DIR"
     exe ln -sf "../niri-autostart.service" "$LINK_PATH"
+    
     exe chown -R "$TARGET_USER:$TARGET_USER" "$HOME_DIR/.config/systemd"
     success "Auto-login configured."
 fi

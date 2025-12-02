@@ -68,7 +68,11 @@ if [ "$CN_MIRROR" == "1" ] || [ "$DEBUG" == "1" ]; then
     if [ "$DEBUG" == "1" ]; then warn "DEBUG MODE ACTIVE"; fi
     
     log "Enabling China Optimizations..."
-    exe flatpak remote-modify flathub --url=https://mirrors.ustc.edu.cn/flathub
+    
+    # [MODIFIED] Using Tsinghua Mirror (TUNA)
+    log "-> Switching Flathub to Tsinghua Mirror..."
+    exe flatpak remote-modify flathub --url=https://mirror.tuna.tsinghua.edu.cn/flathub
+    
     export GOPROXY=https://goproxy.cn,direct
     if ! grep -q "GOPROXY" /etc/environment; then echo "GOPROXY=https://goproxy.cn,direct" >> /etc/environment; fi
     exe runuser -u "$TARGET_USER" -- git config --global url."https://gitclone.com/github.com/".insteadOf "https://github.com/"
@@ -123,7 +127,6 @@ if [ -f "$LIST_FILE" ]; then
             for git_pkg in "${GIT_LIST[@]}"; do
                 if ! exe runuser -u "$TARGET_USER" -- env GOPROXY=$GOPROXY yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$git_pkg"; then
                     warn "Retrying $git_pkg..."
-                    # Toggle Mirror
                     if runuser -u "$TARGET_USER" -- git config --global --get url."https://gitclone.com/github.com/".insteadOf > /dev/null; then
                         runuser -u "$TARGET_USER" -- git config --global --unset url."https://gitclone.com/github.com/".insteadOf
                     else
@@ -202,25 +205,13 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 5. Enable SDDM & Theme
+# 5. Enable SDDM
 # ------------------------------------------------------------------------------
-section "Step 5/5" "Display Manager Setup"
+section "Step 5/5" "Enable Display Manager"
 
-log "Enabling SDDM Service..."
+log "Enabling SDDM..."
 exe systemctl enable sddm
-
-# --- [NEW] Set SDDM Theme to Breeze ---
-log "Configuring SDDM Theme (Breeze)..."
-SDDM_CONF_DIR="/etc/sddm.conf.d"
-exe mkdir -p "$SDDM_CONF_DIR"
-
-# Write config to a separate file for cleanliness
-cat <<EOF > "$SDDM_CONF_DIR/theme.conf"
-[Theme]
-Current=breeze
-EOF
-
-success "SDDM enabled and theme set to Breeze."
+success "SDDM enabled. Will start on reboot."
 
 # ------------------------------------------------------------------------------
 # Cleanup
