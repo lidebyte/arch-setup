@@ -118,8 +118,6 @@ exe runuser -u "$TARGET_USER" -- mkdir -p "$PORTAL_CONF_DIR"
 cat <<EOT > "/tmp/niri-portals.conf"
 [preferred]
 default=gnome;
-org.freedesktop.impl.portal.ScreenCast=gnome;
-org.freedesktop.impl.portal.Screenshot=gnome;
 EOT
 exe cp "/tmp/niri-portals.conf" "$PORTAL_CONF_DIR/niri-portals.conf"
 exe chown "$TARGET_USER:$TARGET_USER" "$PORTAL_CONF_DIR/niri-portals.conf"
