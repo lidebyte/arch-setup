@@ -10,8 +10,7 @@ eza
 swaylock-effects
 swayidle
 wl-clipboard
-swww6
-waypaper
+swww
 waybar
 ttf-jetbrains-mono-nerd
 grim
@@ -41,3 +40,4 @@ AUR:clipse-bin
 AUR:clipse-gui
 AUR:satty-git
 AUR:python-pywalfox
+AUR:waypaper
