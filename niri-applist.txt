@@ -44,3 +44,4 @@ AUR:python-pywalfox
 AUR:waypaper
 AUR:ddcutil-service
 AUR:niriswitcher
+AUR:ttf-jetbrains-maple-mono-nf-xx-xx
