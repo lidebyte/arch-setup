@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 06-kdeplasma-setup.sh - KDE Plasma Setup (Visual Enhanced + Logic Refactored)
+# 06-kdeplasma-setup.sh - KDE Plasma Setup (FZF Menu + Robust Installation)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,6 +12,14 @@ DEBUG=${DEBUG:-0}
 CN_MIRROR=${CN_MIRROR:-0}
 
 check_root
+
+# Ensure FZF is installed
+if ! command -v fzf &> /dev/null; then
+    log "Installing dependency: fzf..."
+    pacman -S --noconfirm fzf >/dev/null 2>&1
+fi
+
+trap 'echo -e "\n   ${H_YELLOW}>>> Operation cancelled by user (Ctrl+C). Skipping...${NC}"' INT
 
 section "Phase 6" "KDE Plasma Environment"
 
@@ -62,10 +70,7 @@ fi
 # --- Mirror Configuration ---
 if [ "$IS_CN_ENV" = true ]; then
     log "Enabling China Optimizations..."
-    
-    # Use utility function
     select_flathub_mirror
-    
     success "Optimizations Enabled."
 else
     log "Using Global Official Sources."
@@ -77,7 +82,7 @@ echo "$TARGET_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDO_TEMP_FILE"
 chmod 440 "$SUDO_TEMP_FILE"
 
 # ------------------------------------------------------------------------------
-# 3. Install Dependencies (Logic: Batch -> Verify -> AUR -> Recovery)
+# 3. Install Dependencies (FZF Selection + Retry Logic)
 # ------------------------------------------------------------------------------
 section "Step 3/5" "KDE Dependencies"
 
@@ -87,6 +92,9 @@ UNDO_SCRIPT="$PARENT_DIR/undochange.sh"
 # --- Critical Failure Handler ---
 critical_failure_handler() {
     local failed_pkg="$1"
+    
+    # Disable trap to prevent loops
+    trap - ERR
     
     echo ""
     echo -e "\033[0;31m################################################################\033[0m"
@@ -127,53 +135,135 @@ critical_failure_handler() {
 # --- Verification Function ---
 verify_installation() {
     local pkg="$1"
-    # 使用 pacman -Q 检查包是否存在
-    if pacman -Q "$pkg" &>/dev/null; then
-        return 0 # 已安装
-    else
-        return 1 # 未安装
-    fi
+    if pacman -Q "$pkg" &>/dev/null; then return 0; else return 1; fi
 }
 
 if [ -f "$LIST_FILE" ]; then
-    mapfile -t PACKAGE_ARRAY < <(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | tr -d '\r')
     
-    if [ ${#PACKAGE_ARRAY[@]} -gt 0 ]; then
-        BATCH_LIST=()
-        AUR_LIST=()
+    REPO_APPS=()
+    AUR_APPS=()
 
-        # 1. Parse List & Separate
-        for pkg in "${PACKAGE_ARRAY[@]}"; do
-            # 兼容旧列表习惯
-            [ "$pkg" == "imagemagic" ] && pkg="imagemagick"
+    # ---------------------------------------------------------
+    # 3.1 Countdown Logic
+    # ---------------------------------------------------------
+    if ! grep -q -vE "^\s*#|^\s*$" "$LIST_FILE"; then
+        warn "App list is empty. Skipping."
+    else
+        echo ""
+        echo -e "   Selected List: ${BOLD}$LIST_FILE${NC}"
+        echo -e "   ${H_YELLOW}>>> Default installation will start in 60 seconds.${NC}"
+        echo -e "   ${H_RED}${BOLD}>>> WARNING: AUR packages may fail due to unstable network connection!${NC}"
+        echo -e "   ${H_CYAN}>>> Press ANY KEY to customize selection...${NC}"
 
-            if [[ "$pkg" == "AUR:"* ]]; then
-                clean_pkg="${pkg#AUR:}"
-                AUR_LIST+=("$clean_pkg")
-            elif [[ "$pkg" == *"-git" ]]; then
-                # 兼容旧逻辑：如果没写 AUR: 但带了 -git，也视为 AUR
-                AUR_LIST+=("$pkg")
-            else
-                BATCH_LIST+=("$pkg")
+        if read -t 60 -n 1 -s -r; then
+            USER_INTERVENTION=true
+        else
+            USER_INTERVENTION=false
+        fi
+
+        # ---------------------------------------------------------
+        # 3.2 FZF Selection Logic
+        # ---------------------------------------------------------
+        SELECTED_RAW=""
+
+        if [ "$USER_INTERVENTION" = true ]; then
+            clear
+            echo -e "\n  Loading package list..."
+
+            # Visual: Name <TAB> # Description
+            SELECTED_RAW=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | \
+                sed -E 's/[[:space:]]+#/\t#/' | \
+                fzf --multi \
+                    --layout=reverse \
+                    --border \
+                    --margin=1,2 \
+                    --prompt="Search Pkg > " \
+                    --pointer=">>" \
+                    --marker="* " \
+                    --delimiter=$'\t' \
+                    --with-nth=1 \
+                    --bind 'load:select-all' \
+                    --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+                    --info=inline \
+                    --header="[TAB] TOGGLE | [ENTER] INSTALL | [CTRL-D] DE-ALL | [CTRL-A] SE-ALL" \
+                    --preview "echo {} | cut -f2 -d$'\t' | sed 's/^# //'" \
+                    --preview-window=right:45%:wrap:border-left \
+                    --color=dark \
+                    --color=fg+:white,bg+:black \
+                    --color=hl:blue,hl+:blue:bold \
+                    --color=header:yellow:bold \
+                    --color=info:magenta \
+                    --color=prompt:cyan,pointer:cyan:bold,marker:green:bold \
+                    --color=spinner:yellow)
+            
+            clear
+            
+            if [ -z "$SELECTED_RAW" ]; then
+                warn "User cancelled selection. Skipping Step 3."
+                # Empty arrays
+            fi
+        else
+            log "Timeout reached (60s). Auto-confirming ALL packages."
+            # Simulate FZF output for consistent processing
+            SELECTED_RAW=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | sed -E 's/[[:space:]]+#/\t#/')
+        fi
+
+        # ---------------------------------------------------------
+        # 3.3 Categorize Selection
+        # ---------------------------------------------------------
+        if [ -n "$SELECTED_RAW" ]; then
+            log "Processing selection..."
+            while IFS= read -r line; do
+                # Extract Name (Before TAB)
+                raw_pkg=$(echo "$line" | cut -f1 -d$'\t' | xargs)
+                [[ -z "$raw_pkg" ]] && continue
+                
+                # Legacy compatibility (imagemagick)
+                [ "$raw_pkg" == "imagemagic" ] && raw_pkg="imagemagick"
+
+                # Identify AUR vs Repo
+                if [[ "$raw_pkg" == AUR:* ]]; then
+                    clean_name="${raw_pkg#AUR:}"
+                    AUR_APPS+=("$clean_name")
+                elif [[ "$raw_pkg" == *"-git" ]]; then
+                    # Implicit AUR if ending in -git (Legacy logic support)
+                    AUR_APPS+=("$raw_pkg")
+                else
+                    REPO_APPS+=("$raw_pkg")
+                fi
+            done <<< "$SELECTED_RAW"
+        fi
+    fi
+
+    info_kv "Scheduled" "Repo: ${#REPO_APPS[@]}" "AUR: ${#AUR_APPS[@]}"
+
+    # ---------------------------------------------------------
+    # 3.4 Install Applications
+    # ---------------------------------------------------------
+
+    # --- A. Install Repo Apps (BATCH MODE) ---
+    if [ ${#REPO_APPS[@]} -gt 0 ]; then
+        log "Phase 1: Batch Installing Repository Packages..."
+        
+        # Filter installed
+        REPO_QUEUE=()
+        for pkg in "${REPO_APPS[@]}"; do
+            if ! pacman -Qi "$pkg" &>/dev/null; then
+                REPO_QUEUE+=("$pkg")
             fi
         done
 
-        # 2. Phase 1: Batch Install (Repo Packages)
-        if [ ${#BATCH_LIST[@]} -gt 0 ]; then
-            log "Phase 1: Batch Installing Repository Packages..."
+        if [ ${#REPO_QUEUE[@]} -gt 0 ]; then
+            # Batch Install
+            exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "${REPO_QUEUE[@]}"
             
-            # 尝试安装
-            exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "${BATCH_LIST[@]}"
-            
-            # --- Verification Loop ---
+            # Verify Loop
             log "Verifying batch installation..."
-            for pkg in "${BATCH_LIST[@]}"; do
+            for pkg in "${REPO_QUEUE[@]}"; do
                 if ! verify_installation "$pkg"; then
                     warn "Verification failed for '$pkg'. Retrying individually..."
-                    # 失败重试：单独安装这一个
                     exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed "$pkg"
                     
-                    # 二次核查
                     if ! verify_installation "$pkg"; then
                         critical_failure_handler "$pkg (Repo)"
                     else
@@ -182,52 +272,57 @@ if [ -f "$LIST_FILE" ]; then
                 fi
             done
             success "Batch phase verified."
+        else
+            log "All selected repo packages are already installed."
         fi
+    fi
 
-        # 3. Phase 2: Sequential Install (AUR Packages)
-        if [ ${#AUR_LIST[@]} -gt 0 ]; then
-            log "Phase 2: Installing AUR Packages (Sequential)..."
-            log "Hint: Use Ctrl+C to skip a specific package download step."
+    # --- B. Install AUR Apps (SEQUENTIAL + RETRY) ---
+    if [ ${#AUR_APPS[@]} -gt 0 ]; then
+        log "Phase 2: Installing AUR Packages (Sequential)..."
+        log "Hint: Use Ctrl+C to skip a specific package download step."
 
-            for aur_pkg in "${AUR_LIST[@]}"; do
-                log "Installing '$aur_pkg'..."
+        for aur_pkg in "${AUR_APPS[@]}"; do
+            if pacman -Qi "$aur_pkg" &>/dev/null; then
+                log "Skipping '$aur_pkg' (Already installed)."
+                continue
+            fi
+            
+            log "Installing AUR: $aur_pkg ..."
+            install_success=false
+            max_retries=2
+            
+            for (( i=0; i<=max_retries; i++ )); do
+                if [ $i -gt 0 ]; then
+                    warn "Retry $i/$max_retries for '$aur_pkg' in 3 seconds..."
+                    sleep 3
+                fi
                 
-                # Try 1
                 runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$aur_pkg"
                 EXIT_CODE=$?
 
-                # Ctrl+C 跳过处理
+                # Handle Ctrl+C skip
                 if [ $EXIT_CODE -eq 130 ]; then
                     warn "Skipped '$aur_pkg' by user request (Ctrl+C)."
-                    continue
+                    break # Skip retries for this package
                 fi
 
-                # --- Verification ---
-                if ! verify_installation "$aur_pkg"; then
-                    warn "Verification failed for '$aur_pkg'. Retrying once..."
-                    
-                    # Retry 1
-                    runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$aur_pkg"
-                    RETRY_CODE=$?
-
-                    if [ $RETRY_CODE -eq 130 ]; then
-                         warn "Skipped '$aur_pkg' on retry by user request (Ctrl+C)."
-                         continue
-                    fi
-
-                    # 二次核查
-                    if ! verify_installation "$aur_pkg"; then
-                        critical_failure_handler "$aur_pkg (AUR)"
-                    else
-                         success "Verified: $aur_pkg"
-                    fi
+                if verify_installation "$aur_pkg"; then
+                    install_success=true
+                    success "Installed $aur_pkg"
+                    break
                 else
-                    success "Verified: $aur_pkg"
+                    warn "Attempt $((i+1)) failed for $aur_pkg"
                 fi
             done
-        fi
-        
+
+            if [ "$install_success" = false ] && [ $EXIT_CODE -ne 130 ]; then
+                # Trigger critical failure if not skipped by user
+                critical_failure_handler "$aur_pkg (AUR)"
+            fi
+        done
     fi
+
 else
     warn "kde-applist.txt not found."
 fi
