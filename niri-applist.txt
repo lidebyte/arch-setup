@@ -1,67 +1,67 @@
-# --- 核心应用 ---
-firefox                                  # 火狐浏览器
-kitty                                    # 终端模拟器 (脚本主要依赖)
-neovim                                   # 现代化的 Vim 文本编辑器
-imv                                      # 轻量级 Wayland 图片查看器
-mission-center                           # 任务管理器 (界面类似 Windows)
-fish                                     # 更加用户友好的交互式 Shell
+# --- Core Applications ---
+firefox                                  # Web Browser (Mozilla)
+kitty                                    # Terminal Emulator (GPU Accelerated)
+neovim                                   # Hyperextensible Vim-based text editor
+imv                                      # Image Viewer for Wayland
+mission-center                           # System Monitor (Task Manager style)
+fish                                     # Friendly Interactive Shell
 
-# --- Niri/Wayland 基础组件 ---
-xwayland-satellite                       # XWayland 兼容性守护进程
-swayidle                                 # 空闲管理守护进程 (自动锁屏/休眠)
-swaylock-effects                         # 带特效的锁屏工具
-swayosd                                  # 屏幕显示的音量/亮度提示 (OSD)
-nwg-look                                 # GTK3 主题/样式配置工具
-qt5ct                                    # Qt5 主题配置工具
-qt6ct                                    # Qt6 主题配置工具
+# --- Niri/Wayland Components ---
+xwayland-satellite                       # XWayland compatibility daemon (Rootless)
+swayidle                                 # Idle management daemon (Screen lock/suspend)
+swaylock-effects                         # Screen locker with effects (Blur/Screenshots)
+swayosd                                  # On-Screen Display for Volume/Brightness
+nwg-look                                 # GTK3 settings editor for Wayland
+qt5ct                                    # Qt5 configuration tool
+qt6ct                                    # Qt6 configuration tool
 
-# --- 美化与外观 ---
-breeze                                   # KDE Breeze 视觉风格
-breeze-gtk                               # Breeze 的 GTK 主题适配
-breeze-icons                             # Breeze 图标主题
-breeze5                                  # Breeze 风格 (Qt5)
-ttf-jetbrains-mono-nerd                  # JetBrains Mono 字体 (Nerd Patch)
+# --- Aesthetics & Theming ---
+breeze                                   # KDE Breeze visual style
+breeze-gtk                               # Breeze GTK theme
+breeze-icons                             # Breeze icon theme
+breeze5                                  # Breeze style for Qt5
+ttf-jetbrains-mono-nerd                  # JetBrains Mono font (Nerd Font patched)
 
-# --- 壁纸管理 ---
-swww                                     # 高效的 Wayland 动态壁纸守护程序
+# --- Wallpaper ---
+swww                                     # Efficient wallpaper daemon for Wayland
 
-# --- 状态栏与组件 ---
-waybar                                   # 高度可定制的状态栏
+# --- Status Bar ---
+waybar                                   # Highly customizable Wayland bar
 
-# --- 截图与录屏 ---
-grim                                     # 截图工具 (抓取屏幕)
-slurp                                    # 选区工具 (配合 grim 使用)
-swappy                                   # 截图编辑与标注工具
-wf-recorder                              # 屏幕录制工具
-hyprpicker                               # 屏幕取色器
+# --- Screenshots & Recording ---
+grim                                     # Screenshot utility (Grabs images)
+slurp                                    # Region selector (Works with grim)
+swappy                                   # Screenshot editing tool
+wf-recorder                              # Screen recorder for Wayland
+hyprpicker                               # Color picker for Wayland
 
-# --- 剪贴板管理 ---
-wl-clipboard                             # Wayland 剪贴板基础工具
-cliphist                                 # 剪贴板历史记录管理器
+# --- Clipboard ---
+wl-clipboard                             # Command-line copy/paste utilities
+cliphist                                 # Clipboard history manager
 
-# --- 命令行增强 ---
-starship                                 # 跨 Shell 的自定义终端提示符
-zoxide                                   # 智能目录跳转工具 (cd 的替代品)
-eza                                      # 现代化的 ls 命令替代品
-thefuck                                  # 命令行自动纠错工具
-jq                                       # 命令行 JSON 处理工具
-yazi                                     # 终端高性能文件管理器
-imagemagick                              # 强大的图片处理工具集
+# --- CLI Enhancements ---
+starship                                 # Cross-shell prompt
+zoxide                                   # Smarter cd command
+eza                                      # Modern replacement for ls
+thefuck                                  # Magnificent app which corrects your previous console command
+jq                                       # Command-line JSON processor
+yazi                                     # Blazing fast terminal file manager
+imagemagick                              # Image manipulation tools
 
-# --- 硬件与多媒体 ---
-brightnessctl                            # 屏幕亮度控制工具
-cava                                     # 终端音频可视化频谱
+# --- Hardware & Audio ---
+brightnessctl                            # Device brightness control
+cava                                     # Console-based Audio Visualizer
 
-# --- AUR 软件包 (脚本会自动识别前缀) ---
-AUR:waybar-niri-taskbar-git              # Waybar 模块: Niri 任务栏
-AUR:waybar-module-pacman-updates-git     # Waybar 模块: Pacman 系统更新提示
-AUR:wlogout                              # 图形化的注销/关机菜单
-AUR:matugen                              # Material You 动态主题生成器
-AUR:clipse-bin                           # 剪贴板管理工具 (TUI版)
-AUR:clipse-gui                           # 剪贴板管理工具 (GUI版)
-AUR:satty-git                            # 截图编辑工具 (Satty)
-AUR:python-pywalfox                      # Firefox 主题动态适配脚本
-AUR:waypaper                             # 壁纸设置图形界面 (swww 前端)
-AUR:ddcutil-service                      # 显示器硬件亮度控制服务
-AUR:niriswitcher                         # Niri 窗口/工作区切换器
-AUR:ttf-jetbrains-maple-mono-nf-xx-xx    # Maple Mono 字体 (Nerd Font)
+# --- AUR Packages ---
+AUR:waybar-niri-taskbar-git              # Waybar module: Niri Workspaces/Taskbar
+AUR:waybar-module-pacman-updates-git     # Waybar module: Pacman updates indicator
+AUR:wlogout                              # Logout menu (Shutdown/Reboot/Lock)
+AUR:matugen                              # Material You theme generator
+AUR:clipse-bin                           # Clipboard manager
+AUR:clipse-gui                           # Clipboard manager (GUI binary)
+AUR:satty-git                            # Modern screenshot annotation tool
+AUR:python-pywalfox                      # Pywal support for Firefox
+AUR:waypaper                             # GUI wallpaper setter (Frontend for swww)
+AUR:ddcutil-service                      # Monitor hardware brightness control service
+AUR:niriswitcher                         # Window switcher for Niri
+AUR:ttf-jetbrains-maple-mono-nf-xx-xx    # Maple Mono NF font
