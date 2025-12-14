@@ -35,7 +35,7 @@ HOME_DIR="/home/$TARGET_USER"
 info_kv "Target" "$TARGET_USER"
 
 # ------------------------------------------------------------------------------
-# 1. List Selection (FZF with Countdown)
+# 1. List Selection & User Prompt
 # ------------------------------------------------------------------------------
 if [ "$DESKTOP_ENV" == "kde" ]; then
     LIST_FILENAME="kde-common-applist.txt"
@@ -55,10 +55,6 @@ if [ ! -f "$LIST_FILE" ]; then
     exit 0
 fi
 
-# ---------------------------------------------------------
-# 1.1 Countdown Logic
-# ---------------------------------------------------------
-
 if ! grep -q -vE "^\s*#|^\s*$" "$LIST_FILE"; then
     warn "App list is empty. Skipping."
     trap - INT
@@ -67,62 +63,75 @@ fi
 
 echo ""
 echo -e "   Selected List: ${BOLD}$LIST_FILENAME${NC}"
-echo -e "   ${H_YELLOW}>>> Default installation will start in 60 seconds.${NC}"
-echo -e "   ${H_RED}${BOLD}>>> WARNING: AUR packages may fail due to unstable network connection!${NC}"
-echo -e "   ${H_CYAN}>>> Press ANY KEY to customize selection...${NC}"
+echo -e "   ${H_CYAN}>>> Do you want to install common applications?${NC}"
+echo -e "   ${H_WHITE}    [ENTER] = Select packages via FZF${NC}"
+echo -e "   ${H_WHITE}    [N]     = Skip installation${NC}"
+echo -e "   ${H_YELLOW}    [Timeout 60s] = Auto-install ALL default packages (No FZF)${NC}"
+echo ""
 
-if read -t 60 -n 1 -s -r; then
-    USER_INTERVENTION=true
-else
-    USER_INTERVENTION=false
-fi
+# 使用 read -t 60 进行询问
+# 状态码 0 = 用户输入了内容 (或者直接回车)
+# 状态码 >128 = 超时
+read -t 60 -p "   Please select [Y/n]: " choice
+READ_STATUS=$?
 
-# ---------------------------------------------------------
-# 1.2 Selection Logic
-# ---------------------------------------------------------
 SELECTED_RAW=""
 
-if [ "$USER_INTERVENTION" = true ]; then
-    # --- Interactive FZF ---
-    clear
-    echo -e "\n  Loading application list..."
+# Case 1: Timeout (Auto Install ALL)
+if [ $READ_STATUS -ne 0 ]; then
+    echo "" # 换行，因为超时read不会自动换行
+    warn "Timeout reached (60s). Auto-installing ALL applications from list..."
     
-    SELECTED_RAW=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | \
-        sed -E 's/[[:space:]]+#/\t#/' | \
-        fzf --multi \
-            --layout=reverse \
-            --border \
-            --margin=1,2 \
-            --prompt="Search App > " \
-            --pointer=">>" \
-            --marker="* " \
-            --delimiter=$'\t' \
-            --with-nth=1 \
-            --bind 'load:select-all' \
-            --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
-            --info=inline \
-            --header="[TAB] TOGGLE | [ENTER] INSTALL | [CTRL-D] DE-ALL | [CTRL-A] SE-ALL" \
-            --preview "echo {} | cut -f2 -d$'\t' | sed 's/^# //'" \
-            --preview-window=right:45%:wrap:border-left \
-            --color=dark \
-            --color=fg+:white,bg+:black \
-            --color=hl:blue,hl+:blue:bold \
-            --color=header:yellow:bold \
-            --color=info:magenta \
-            --color=prompt:cyan,pointer:cyan:bold,marker:green:bold \
-            --color=spinner:yellow)
-    
-    clear
-    
-    if [ -z "$SELECTED_RAW" ]; then
-        log "Skipping application installation (User cancelled)."
+    # 直接读取文件，格式化为与 FZF 输出一致的格式，方便后续处理
+    # 这一步保留了 AUR: 前缀，后续循环会处理它
+    SELECTED_RAW=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | sed -E 's/[[:space:]]+#/\t#/')
+
+# Case 2: User Input
+else
+    choice=${choice:-Y} # 默认为 Y
+    if [[ "$choice" =~ ^[nN]$ ]]; then
+        # User chose No
+        warn "User skipped application installation."
         trap - INT
         exit 0
+    else
+        # User chose Yes -> Enter FZF
+        clear
+        echo -e "\n  Loading application list..."
+        
+        SELECTED_RAW=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | \
+            sed -E 's/[[:space:]]+#/\t#/' | \
+            fzf --multi \
+                --layout=reverse \
+                --border \
+                --margin=1,2 \
+                --prompt="Search App > " \
+                --pointer=">>" \
+                --marker="* " \
+                --delimiter=$'\t' \
+                --with-nth=1 \
+                --bind 'load:select-all' \
+                --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+                --info=inline \
+                --header="[TAB] TOGGLE | [ENTER] INSTALL | [CTRL-D] DE-ALL | [CTRL-A] SE-ALL" \
+                --preview "echo {} | cut -f2 -d$'\t' | sed 's/^# //'" \
+                --preview-window=right:45%:wrap:border-left \
+                --color=dark \
+                --color=fg+:white,bg+:black \
+                --color=hl:blue,hl+:blue:bold \
+                --color=header:yellow:bold \
+                --color=info:magenta \
+                --color=prompt:cyan,pointer:cyan:bold,marker:green:bold \
+                --color=spinner:yellow)
+        
+        clear
+        
+        if [ -z "$SELECTED_RAW" ]; then
+            log "Skipping application installation (User cancelled selection)."
+            trap - INT
+            exit 0
+        fi
     fi
-else
-    # --- Auto Confirm (Timeout) ---
-    log "Timeout reached (60s). Auto-confirming ALL applications."
-    SELECTED_RAW=$(grep -vE "^\s*#|^\s*$" "$LIST_FILE" | sed -E 's/[[:space:]]+#/\t#/')
 fi
 
 # ------------------------------------------------------------------------------
@@ -130,6 +139,8 @@ fi
 # ------------------------------------------------------------------------------
 log "Processing selection..."
 
+# 注意：此循环负责剥离前缀，确保 SELECTED_RAW 中无论是否包含前缀，
+# 最终进入数组的都是纯净包名。
 while IFS= read -r line; do
     # 1. Extract Name (Before TAB)
     raw_pkg=$(echo "$line" | cut -f1 -d$'\t' | xargs)
@@ -182,7 +193,6 @@ if [ ${#REPO_APPS[@]} -gt 0 ]; then
         BATCH_LIST="${REPO_QUEUE[*]}"
         info_kv "Installing" "${#REPO_QUEUE[@]} packages via Pacman/Yay"
         
-        # [FIX] 移除了内部的 sudo 配置，使用全局配置
         if ! exe runuser -u "$TARGET_USER" -- yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None $BATCH_LIST; then
             error "Batch installation failed. Some repo packages might be missing."
             for pkg in "${REPO_QUEUE[@]}"; do
@@ -191,8 +201,6 @@ if [ ${#REPO_APPS[@]} -gt 0 ]; then
         else
             success "Repo batch installation completed."
         fi
-        
-        # [FIX] 移除了内部的 rm -f SUDO_TEMP_FILE，延迟到最后
     else
         log "All Repo packages are already installed."
     fi
@@ -219,7 +227,6 @@ if [ ${#AUR_APPS[@]} -gt 0 ]; then
             fi
             
             # Using runuser to run yay as target user
-            # 因为 sudoers 文件还存在，所以 yay 内部调用 sudo 时不会弹密码
             if runuser -u "$TARGET_USER" -- yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$app"; then
                 install_success=true
                 success "Installed $app"
