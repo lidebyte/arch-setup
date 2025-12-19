@@ -485,7 +485,7 @@ Restart=on-failure
 WantedBy=default.target
 EOT
   as_user ln -sf "../niri-autostart.service" "$LINK"
-  chown -R "$TARGET_USER:$TARGET_USER" "$SVC_DIR"
+  chown -R "$TARGET_USER" "$SVC_DIR"
   success "Enabled."
 fi
 
