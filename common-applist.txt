@@ -25,6 +25,12 @@ gnome-calendar                           # calendar
 gnome-clocks                             # clocks
 gnome-text-editor                        # notebook
 
+# --- Wine --- 
+wine                                     # run windows exe 
+
+# --- KVM ---
+virt-manager                             # GUi for KVM qemu virtula machine
+
 # --- AUR Packages (Social) ---
 AUR:linuxqq-appimage                     # Tencent QQ (AppImage)
 AUR:wechat-appimage                      # WeChat (AppImage)
