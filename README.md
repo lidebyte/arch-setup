@@ -24,10 +24,6 @@
 
 ## 更新计划
 
-1. 增加可选安装kvm虚拟机
+- 增加quickshell可选
 
-2. 可选安装和配置wine
-
-3. 增加quickshell可选
-
-4. gnome自动配置
+- gnome自动配置
