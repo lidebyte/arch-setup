@@ -263,18 +263,34 @@ if pacman -Qi virt-manager &>/dev/null; then
   info_kv "Config" "Virt-Manager detected"
   
   # 1. 安装完整依赖
+  # iptables-nft 和 dnsmasq 是默认 NAT 网络必须的
   log "Installing QEMU/KVM dependencies..."
-  pacman -S --noconfirm --needed qemu-full virt-manager swtpm dnsmasq
+  pacman -S --noconfirm --needed qemu-full virt-manager swtpm dnsmasq iptables-nft dmidecode
 
   # 2. 添加用户组 (需要重新登录生效)
   log "Adding $TARGET_USER to libvirt group..."
   usermod -a -G libvirt "$TARGET_USER"
+  # 同时添加 kvm 和 input 组以防万一
+  usermod -a -G kvm,input "$TARGET_USER"
 
   # 3. 开启服务
   log "Enabling libvirtd service..."
   systemctl enable --now libvirtd
 
-  # 4. 配置网络 (Default NAT)
+  # 4. [修复] 强制设置 virt-manager 默认连接为 QEMU/KVM
+  # 解决第一次打开显示 LXC 或无法连接的问题
+  log "Setting default URI to qemu:///system..."
+  
+  # 编译 glib schemas (防止 gsettings 报错)
+  glib-compile-schemas /usr/share/glib-2.0/schemas/
+
+  # 强制写入 Dconf 配置
+  # uris: 连接列表
+  # autoconnect: 自动连接的列表
+  as_user gsettings set org.virt-manager.virt-manager.connections uris "['qemu:///system']"
+  as_user gsettings set org.virt-manager.virt-manager.connections autoconnect "['qemu:///system']"
+
+  # 5. 配置网络 (Default NAT)
   log "Starting default network..."
   sleep 3
   virsh net-start default >/dev/null 2>&1 || warn "Default network might be already active."

@@ -432,14 +432,6 @@ if [ "$INSTALL_LAZYVIM" = true ]; then
   fi
 fi
 
-# --- Setting Default MIME Types ---
-section "Config" "Setting Default Apps (MIME)"
-log "Configuring file associations..."
-as_user xdg-mime default org.gnome.Nautilus.desktop inode/directory
-as_user xdg-mime default imv.desktop image/jpeg image/png image/gif image/webp image/bmp image/tiff
-as_user xdg-mime default mpv.desktop video/mp4 video/x-matroska video/webm video/avi video/quicktime
-success "MIME types configured."
-
 # ==============================================================================
 # STEP 7: Wallpapers
 # ==============================================================================
