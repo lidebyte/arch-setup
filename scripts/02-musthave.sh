@@ -165,14 +165,6 @@ section "Step 7/8" "Fastfetch"
 exe pacman -Syu --noconfirm --needed fastfetch
 success "Fastfetch installed."
 
-# ------------------------------------------------------------------------------
-# 8. XDG Dirs
-# ------------------------------------------------------------------------------
-section "Step 8/8" "User Directories"
-
-exe pacman -Syu --noconfirm --needed xdg-user-dirs
-success "xdg-user-dirs installed."
-
 log "Module 02 completed."
 
 # ------------------------------------------------------------------------------
