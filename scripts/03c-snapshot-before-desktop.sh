@@ -53,7 +53,7 @@ create_checkpoint() {
             log "Snapshot '$MARKER' already exists on [home]."
         else
             log "Creating safety checkpoint on [home]..."
-            snapper -c home create --description "$MARKER" --type single
+            snapper -c home create --description "$MARKER"
             success "Home snapshot created."
         fi
     fi

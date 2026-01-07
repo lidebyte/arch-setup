@@ -99,25 +99,33 @@ section "Safety Net" "Creating Initial Snapshots"
 
 # Snapshot Root
 if snapper list-configs | grep -q "root "; then
-    log "Creating Root snapshot..."
-    if exe snapper -c root create --description "Before Shorin Setup"; then
-        success "Root snapshot created."
+    if snapper -c root list --columns description | grep -q "Before Shorin Setup"; then
+        log "Snapshot already created."
     else
-        error "Failed to create Root snapshot."
-        warn "Cannot proceed without a safety snapshot. Aborting."
-        exit 1
+        log "Creating Root snapshot..."
+        if exe snapper -c root create --description "Before Shorin Setup"; then
+            success "Root snapshot created."
+        else
+            error "Failed to create Root snapshot."
+            warn "Cannot proceed without a safety snapshot. Aborting."
+            exit 1
+        fi
     fi
 fi
 
 # Snapshot Home
 if snapper list-configs | grep -q "home "; then
-    log "Creating Home snapshot..."
-    if exe snapper -c home create --description "Before Shorin Setup"; then
-        success "Home snapshot created."
+    if snapper -c home list --columns description | grep -q "Before Shorin Setup"; then
+        log "Snapshot already created."
     else
-        error "Failed to create Home snapshot."
-        # This is less critical than root, but should still be a failure.
-        exit 1
+        log "Creating Home snapshot..."
+        if exe snapper -c home create --description "Before Shorin Setup"; then
+            success "Home snapshot created."
+        else
+            error "Failed to create Home snapshot."
+            # This is less critical than root, but should still be a failure.
+            exit 1
+        fi
     fi
 fi
 
