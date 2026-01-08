@@ -87,7 +87,7 @@ ensure_package_installed() {
     fi
 
     # Try installation
-    if as_user yay -Syu --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
+    if as_user yay -S --noconfirm --needed --answerdiff=None --answerclean=None "$pkg"; then
       install_success=true
       break
     else

@@ -19,7 +19,7 @@ ROOT_FSTYPE=$(findmnt -n -o FSTYPE /)
 
 if [ "$ROOT_FSTYPE" == "btrfs" ]; then
     log "Btrfs filesystem detected."
-    exe pacman -Syu --noconfirm --needed snapper snap-pac btrfs-assistant
+    exe pacman -S --noconfirm --needed snapper snap-pac btrfs-assistant
     success "Snapper tools installed."
 
     log "Initializing Snapper 'root' configuration..."
