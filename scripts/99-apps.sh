@@ -440,7 +440,7 @@ hide_desktop_file() {
   fi
 
 }
-
+section "Config" "Hiding useless .desktop files"
 log "Hiding useless .desktop files"
 hide_desktop_file "/usr/share/applications/avahi-discover.desktop"
 hide_desktop_file "/usr/share/applications/qv4l2.desktop"
