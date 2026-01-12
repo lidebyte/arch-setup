@@ -149,6 +149,7 @@ EXTENSION_LIST=(
     "tilingshell@ferrarodomenico.com"
     "user-theme@gnome-shell-extensions.gcampax.github.com"
     "kimpanel@kde.org"
+    "rounded-window-corners@fxgn"
 )
 
 log "Downloading extensions..."
