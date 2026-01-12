@@ -3,6 +3,7 @@
 
 # 1. 引用工具库
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
 if [ -f "$SCRIPT_DIR/00-utils.sh" ]; then
     source "$SCRIPT_DIR/00-utils.sh"
 else

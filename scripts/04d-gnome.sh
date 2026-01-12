@@ -2,6 +2,7 @@
 
 # 引用工具库
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
 if [ -f "$SCRIPT_DIR/00-utils.sh" ]; then
     source "$SCRIPT_DIR/00-utils.sh"
 else
@@ -82,7 +83,7 @@ EOF
 #=================================================
 section "Step 4" "Configure Shortcuts"
 log "Configuring shortcuts.."
-GNOME_KEY_DIR="$SCRIPT_DIR/gnome-dotfiles/keybinds"
+GNOME_KEY_DIR="$PARENT_DIR/gnome-dotfiles/keybinds"
 cat "$GNOME_KEY_DIR/org.gnome.desktop.wm.keybindings.conf" | sudo -u $TARGET_USER dconf load /org/gnome/desktop/wm/keybindings/
 cat "$GNOME_KEY_DIR/org.gnome.settings-daemon.plugins.media-keys.conf" | sudo -u $TARGET_USER dconf load /org/gnome/settings-daemon/plugins/media-keys/
 cat "$GNOME_KEY_DIR/org.gnome.shell.keybindings.conf" | sudo -u $TARGET_USER dconf load /org/gnome/shell/keybindings/
@@ -162,7 +163,7 @@ fi
 # dotfiles
 #=================================================
 log "Deploying dotfiles..."
-GNOME_DOTFILES_DIR=$SCRIPT_DIR/gnome-dotfiles
+GNOME_DOTFILES_DIR=$PARENT_DIR/gnome-dotfiles
 as_user mkdir -p $HOME_DIR/.config
 cp -rf $GNOME_DOTFILES_DIR/.config/* $HOME_DIR/.config/
 chown -R $TARGET_USER $HOME_DIR/.config
