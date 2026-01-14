@@ -91,7 +91,8 @@ select_desktop() {
         "Shorin's Niri |niri"
         "KDE Plasma |kde"
         "GNOME |gnome"
-        "Quickshell--DMS  |dms"
+        "Quickshell--illogical-impulse(end4) |end4"
+        "Quickshell--DankMaterialShell(DMS)  |dms"
     )
     
     # 2. 绘制菜单 (半开放式风格)
@@ -179,6 +180,9 @@ case "$DESKTOP_ENV" in
         ;;
     kde)
         BASE_MODULES+=("04b-kdeplasma-setup.sh")
+        ;;
+    end4)
+        BASE_MODULES+=("04e-illogical-impulse-end4-quickshell.sh")
         ;;
     dms)
         BASE_MODULES+=("04c-dms-quickshell.sh")
