@@ -91,7 +91,7 @@ DMS_HYPR_INSTALLED=false
 # 检查安装的是niri还是hyprland
 if command -v niri &>/dev/null; then 
     DMS_NIRI_INSTALLED=true
-elif command -v hyprland &/dev/null; then
+elif command -v hyprland &>/dev/null; then
     DMS_HYPR_INSTALLED=true
 fi
 
