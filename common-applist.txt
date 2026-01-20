@@ -10,6 +10,7 @@ btop                                     # great tui mission center / system inf
 steam                                    # Gaming Platform (Valve)
 lutris                                   # Gaming outside steam
 heroic-games-launcher-bin                # Playing Epic games
+protonplus                               # mange proton 
 mpv                                      # Minimalist High Performance Video Player
 fragments                                # BitTorrent Client (GNOME style)
 mangohud                                 # OSD tool for gaming (like msi afterburner)
