@@ -470,6 +470,8 @@ section "Config" "clash tun"
 if comamnd -v clash-verge; then 
      /usr/bin/clash-verge-service &
      sleep 3
+     clash-verge-service-uninstall || true
+     sleep 3
      clash-verge-service-install || true
 fi
 
