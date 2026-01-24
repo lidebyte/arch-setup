@@ -363,37 +363,13 @@ prepare_repository() {
   # 建议定义一个变量指定主分支名，防止以后 Github 变成 other-branch
   local BRANCH_NAME="main" 
 
-  # --- 场景 A: 仓库已存在 (更新) ---
-  if [ -d "$DOTFILES_REPO/.git" ]; then
-    log "Repository exists. Updating (Shallow + Sparse)..."
-    
-    as_user git -C "$DOTFILES_REPO" config core.sparseCheckout true
-    local sparse_file="$DOTFILES_REPO/.git/info/sparse-checkout"
-    as_user truncate -s 0 "$sparse_file"
-    for item in "${TARGET_DIRS[@]}"; do
-      echo "$item" | as_user tee -a "$sparse_file" >/dev/null
-    done
-
-    # 修复点 1：明确指定 pull origin main
-    # 这样即使没有 set-upstream，git 也知道去哪里拉代码
-    if ! as_user git -C "$DOTFILES_REPO" pull origin "$BRANCH_NAME" --depth 1 --ff-only; then # <--- 修改
-      warn "Update failed (Generic). Resetting repository..."
-      rm -rf "$DOTFILES_REPO"
-      # 注意：删除后应该让脚本继续向下执行进入场景 B，或者在这里递归调用一次
-    else
-      success "Repository updated."
-      return 0
-    fi
-  fi
-
-  # --- 场景 B: 仓库不存在 (初始化) ---
   if [ ! -d "$DOTFILES_REPO" ]; then
     log "Initializing Sparse & Shallow Checkout to $DOTFILES_REPO..."
     as_user mkdir -p "$DOTFILES_REPO"
     
     as_user git -C "$DOTFILES_REPO" init
     # 强制将本地分支名设为 main，避免本地是 master 远程是 main 造成的混乱
-    as_user git -C "$DOTFILES_REPO" branch -m "$BRANCH_NAME"  # <--- 新增：确保本地分支名一致
+    as_user git -C "$DOTFILES_REPO" branch -m "$BRANCH_NAME"
     
     as_user git -C "$DOTFILES_REPO" config core.sparseCheckout true
     local sparse_file="$DOTFILES_REPO/.git/info/sparse-checkout"
