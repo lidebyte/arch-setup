@@ -3,8 +3,6 @@ mango
 ghostty
 swaylock
 swaync
-Thunar
 ulauncher
 wofi
-xfce4
 niriswitcher
