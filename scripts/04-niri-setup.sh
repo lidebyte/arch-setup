@@ -414,6 +414,8 @@ if [ -d "$DOTFILES_REPO/dotfiles" ]; then
   # 调用递归函数：从 dotfiles 根目录开始，目标是 HOME
   link_recursive "$DOTFILES_REPO/dotfiles" "$HOME_DIR" "$EXCLUDE_LIST"
 
+  as_user chmod -R +x $HOME_DIR/.local/bin
+
   # --- Post-Process (防止污染 git 的修正) ---
   OUTPUT_EXAMPLE_KDL="$HOME_DIR/.config/niri/output-example.kdl"
   OUTPUT_KDL="$HOME_DIR/.config/niri/output.kdl"
