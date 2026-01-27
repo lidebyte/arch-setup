@@ -468,10 +468,13 @@ if [ -d "$MOZILLA_DIR" ]; then
     mv "$MOZILLA_DIR" "$MOZILLA_DIR.bak.$(date +%s)"
 fi
     
-mkdir -p "$MOZILLA_DIR"
-cp -rf "$PARENT_DIR/resources/firefox" "$MOZILLA_DIR/"
-chown -R "$TARGET_USER" "$MOZILLA_DIR"
-
+if mkdir -p "$MOZILLA_DIR"; then 
+    log "directory created."
+fi
+if cp -rf "$PARENT_DIR/resources/firefox" "$MOZILLA_DIR/"; then
+    chown -R "$TARGET_USER" "$MOZILLA_DIR"
+    log "firefox dotfiles doployed."
+fi
 section "Config" "clash tun"
 
 if command -v clash-verge; then 
