@@ -30,7 +30,7 @@ satty                                   # Modern screenshot annotation tool
 # --- Clipboard ---
 wl-clipboard                             # Command-line copy/paste utilities
 cliphist                                 # Clipboard history manager
-
+xclip                                    # x11 clipboard manger
 # --- CLI Enhancements ---
 starship                                 # Cross-shell prompt
 zoxide                                   # Smarter cd command
